@@ -47,8 +47,8 @@ class Model:
         self._edges.clear()
         for e in tmp_edges:
             self._edges.append((self.id_map[e[0]], self.id_map[e[1]], e[2]))
-
-        self.G.add_weighted_edges_from(self._edges)
+            self.G.add_edge(self.id_map[e[0]], self.id_map[e[1]], weight=e[2])
+        print(self.G.edges())
 
     def get_sum_weight_per_node(self):
         pp = []
@@ -57,6 +57,7 @@ class Model:
             for e in self.G.edges(n, data=True):
                 sum_w += e[2]['weight']
             pp.append((n.id, sum_w))
+            print(pp)
         return pp
 
     def compute_path(self):
@@ -79,8 +80,8 @@ class Model:
             weight_path = self.compute_weight_path(partial_edge)
             if weight_path > self.sol_best:
                 self.sol_best = weight_path + 0.0
-                self.path = partial[:]
-                self.path_edge = partial_edge[:]
+                self.path = partial.copy()
+                self.path_edge = partial_edge.copy()
             return
 
         for n in neighbors:

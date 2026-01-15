@@ -9,71 +9,35 @@ class Controller:
 
     def populate_dd(self):
         """ Metodo per popolare il dropdown dd_year """
-        sighting_list = self._model.list_sighting
-        self._list_shape = self._model.list_shapes
+        for anno in self._model.lista_anni:
+            self._view.dd_year.options.append(ft.dropdown.Option(anno))
 
-        # Popola lista anni unici
-        for n in sighting_list:
-            if n.s_datetime.year not in self._list_year:
-                self._list_year.append(n.s_datetime.year)
-
-        # Popola dropdown anni
-        for year in self._list_year:
-            self._view.dd_year.options.append(ft.dropdown.Option(year))
-
-        for shape in self._list_shape:
+        for shape in self._model.lista_shapes:
             self._view.dd_shape.options.append(ft.dropdown.Option(shape))
 
         self._view.update()
 
     def handle_graph(self, e):
         """ Handler per gestire creazione del grafo """
-        selected_year = self._view.dd_year.value
-        selected_shape = self._view.dd_shape.value
-
-        # Pulisce area risultato
-        self._view.lista_visualizzazione_1.controls.clear()
-
-        # Costruisce grafo con i parametri selezionati
-        self._model.build_graph(selected_shape, selected_year)
-
-        # Mostra info grafo
-        self._view.lista_visualizzazione_1.controls.append(
-            ft.Text(
-                f"Numero di vertici: {self._model.get_num_of_nodes()} "
-                f"Numero di archi: {self._model.get_num_of_edges()}"
-            )
-        )
-
-        # Mostra somma pesi per nodo
-        for node_info in self._model.get_sum_weight_per_node():
-            self._view.lista_visualizzazione_1.controls.append(
-                ft.Text(f"Nodo {node_info[0]}, somma pesi su archi = {node_info[1]}")
-            )
+        shape = self._view.dd_shape.value
+        year = self._view.dd_year.value
+        self._model.crea_grafo(shape, year)
+        n1 = self._model.G.number_of_nodes()
+        n2 = self._model.G.number_of_edges()
+        self._view.lista_visualizzazione_1.controls.append(ft.Text(f'Numero nodi: {n1}\n'
+                                                                   f'Numero di archi: {n2}'))
+        for n,w in self._model.calcola_peso():
+            self._view.lista_visualizzazione_1.controls.append(ft.Text(f'Nodo {n}, somma pesi su archi = {w}'))
 
         self._view.update()
+
 
     def handle_path(self, e):
         """ Handler per gestire il problema ricorsivo di ricerca del cammino """
-        self._model.compute_path()
-
-        # Pulisce area percorso
-        self._view.lista_visualizzazione_2.controls.clear()
-
-        # Mostra peso cammino massimo
-        self._view.lista_visualizzazione_2.controls.append(
-            ft.Text(f"Peso cammino massimo: {self._model.sol_best}")
-        )
-
-        # Mostra dettagli percorso
-        for edge in self._model.path_edge:
-            self._view.lista_visualizzazione_2.controls.append(
-                ft.Text(
-                    f"{edge[0].id} --> {edge[1].id}: "
-                    f"peso {edge[2]} "
-                    f"distanza {self._model.get_distance_weight(edge)}"
-                )
-            )
+        percorso, peso_max = self._model.cammino_massimo()
+        self._view.lista_visualizzazione_2.controls.append(ft.Text(f'Peso_max = {peso_max}\n'))
+        for ii in percorso:
+            self._view.lista_visualizzazione_2.controls.append(ft.Text(
+                f'{ii[0].id} --> {ii[1].id}: weight = {ii[2]}, distance: {self._model.get_distance(ii[0], ii[1])}'))
 
         self._view.update()
-

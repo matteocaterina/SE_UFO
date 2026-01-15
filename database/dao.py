@@ -22,36 +22,20 @@ class DAO:
         return result
 
     @staticmethod
-    def get_sighting():
+    def get_anni():
         conn = DBConnect.get_connection()
 
         result = []
 
         cursor = conn.cursor(dictionary=True)
-        query = """ SELECT * FROM sighting ORDER BY s_datetime ASC"""
+        query = """ SELECT DISTINCT year(s_datetime) as anno
+                    FROM sighting 
+                    ORDER BY anno ASC """
 
         cursor.execute(query)
 
         for row in cursor:
-            result.append(Sighting(**row))
-
-        cursor.close()
-        conn.close()
-        return result
-
-    @staticmethod
-    def get_state():
-        conn = DBConnect.get_connection()
-
-        result = []
-
-        cursor = conn.cursor(dictionary=True)
-        query = """ SELECT * FROM state """
-
-        cursor.execute(query)
-
-        for row in cursor:
-            result.append(State(**row))
+            result.append(row['anno'])
 
         cursor.close()
         conn.close()
@@ -64,7 +48,10 @@ class DAO:
         result = []
 
         cursor = conn.cursor(dictionary=True)
-        query = """ SELECT DISTINCT shape FROM sighting WHERE shape != " " """
+        query = """SELECT DISTINCT shape  
+                    FROM sighting 
+                    WHERE shape != " " 
+                    ORDER BY shape ASC"""
 
         cursor.execute(query)
 
@@ -76,30 +63,44 @@ class DAO:
         return result
 
     @staticmethod
-    def get_weighted_neighbors(a, shape):
+    def get_states():
         conn = DBConnect.get_connection()
 
         result = []
 
         cursor = conn.cursor(dictionary=True)
-        query = """ SELECT LEAST(n.state1, n.state2) as st1, 
-                    GREATEST(n.state1, n.state2) as st2,
-                    COUNT(*) as N
-                    FROM sighting s, neighbor n
-                    WHERE year(s.s_datetime) = %s AND s.shape = %s
-                    AND (s.state = n.state1 OR s.state = n.state2)
-                    GROUP BY st1, st2"""
+        query = """select * from state"""
 
-        cursor.execute(query, (a, shape))
+        cursor.execute(query)
 
         for row in cursor:
-            result.append((row['st1'], row['st2'], row['N']))
+            result.append(State(**row))
 
         cursor.close()
         conn.close()
         return result
 
+    @staticmethod
+    def get_archi(shape, year):
+        conn = DBConnect.get_connection()
 
+        result = []
+
+        cursor = conn.cursor(dictionary=True)
+        query = """SELECT n.state1 as stato1, n.state2  as stato2, COUNT(*) as N
+                    FROM sighting s, neighbor n
+                    WHERE (s.state = n.state1 OR s.state = n.state2)
+                    AND s.shape = %s and year(s.s_datetime ) = %s
+                    AND n.state1 < n.state2
+                    GROUP BY stato1, stato2"""
+
+        cursor.execute(query, (shape, year))
+        for row in cursor:
+            result.append((row['stato1'], row['stato2'], row['N']))
+
+        cursor.close()
+        conn.close()
+        return result
 
 
 
